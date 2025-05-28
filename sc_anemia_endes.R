@@ -9,6 +9,9 @@ library(srvyr)
 library(datametria)
 library(ggplot2)
 library(openxlsx)
+library(gt)
+library(gtExtras)
+library(ggridges)
 
 # ENDES. 
 r0<-fread("datos/RECH0_2023.csv") %>% as_tibble() 
@@ -186,10 +189,6 @@ ggplot()+
   geom_sf(data= Peru1, fill="gray80", linewidth=1)+
   geom_sf(data= anemia3_, color="black", aes(fill=coef), show.legend = F)+
   scale_fill_distiller(palette = "YlOrRd", trans = "reverse")+
-  # annotate(geom = "text", x = -80, y = -10, label = "Océano \nPacífico", fontface = "italic", color = "Blue", size = 3)+
-  # annotate(geom = "text", x = -78, y = -2, label = "Ecuador", fontface = "italic", color = "Black", size = 3)+
-  # annotate(geom = "text", x = -72, y = -1, label = "Colombia", fontface = "italic", color = "Black", size = 3)+
-  # annotate(geom = "text", x = -70, y = -7, label = "Brasil", fontface = "italic", color = "Black", size = 3)+
   coord_sf(xlim = c(-77,-73.2), ylim = c(-10.2,-13.2),expand = FALSE)+
   ggrepel::geom_label_repel(data = c_anemia3_, aes(x=X, y=Y, label = etiq), size = 3,
                             color="black", fontface = "bold", alpha=.8)+
@@ -208,3 +207,25 @@ ggplot()+
   labs(title = "Tasa de anemia en menores de 3 años\nProvincias de Junín")+
   theme(plot.title = element_text(hjust = .5, face = "bold"))
 ggsave("graficos/mapa_anemia_3años_.png", width = 9, height = 6)
+
+#------------------
+diseño2 %>% filter(!is.na(anemia_niveles_3años) & HV015==1 & HC55==0) %>% 
+   group_by(departamentos,anemia_niveles_3años) %>% 
+   summarize(survey_prop(vartype = c("ci","cv"))) %>%
+  rename(departamento=anemia_niveles_3años,
+         `Incidencia (%)`=coef,
+         `Lim. Inferior`=`_low`,
+         `Lim. Superior`=`_upp`,
+         `Coef de Variación`=`_cv`) %>% 
+  gt() %>% 
+  fmt_percent(column = c(`Incidencia (%)`,`Lim. Inferior`,`Lim. Superior`,`Coef de Variación`)) %>% 
+  tab_header(title = "Niveles de Anemia para niños menores de 3 años",
+             subtitle = "Por Departamentos") %>% 
+  gt_theme_538(quiet = TRUE) %>% 
+  tab_source_note("ELABORACIÓN: https://github.com/CesarAHN") %>% 
+  tab_style(style = list(cell_text(align = "center")),
+            locations = list(cells_column_labels(columns = c(`Incidencia (%)`,`Lim. Inferior`,`Lim. Superior`,`Coef de Variación`)))) %>%
+  tab_style(style = list(cell_text(align = "center")),
+            locations = list(cells_body(columns = c(`Incidencia (%)`,`Lim. Inferior`,`Lim. Superior`,`Coef de Variación`)))) %>% 
+  gt_color_rows(`Incidencia (%)`:`Coef de Variación`, palette = "RColorBrewer::RdBu", reverse = T) %>% 
+  gtsave("graficos/tabla_3años.png", vwidth = 600, vheight = 1500)

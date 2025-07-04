@@ -14,12 +14,12 @@ library(gtExtras)
 library(ggridges)
 
 # ENDES. 
-r0<-fread("datos/RECH0_2023.csv") %>% as_tibble() 
-r1<-fread("datos/RECH1_2023.csv") %>% as_tibble() 
-r6<-fread("datos/RECH6_2023.csv") %>% as_tibble() 
+r0<-fread("datos/RECH0_2024.csv") %>% as_tibble() 
+r1<-fread("datos/RECH1_2024.csv") %>% as_tibble() 
+r6<-fread("datos/RECH6_2024.csv") %>% as_tibble() 
 
 r6 %>% inner_join(r1 %>% rename(HC0=HVIDX)) %>% 
-  inner_join(r0) %>% filter(HV007==2023)->tb_1
+  inner_join(r0) %>% filter(HV007==2024)->tb_1
 
 tb_1 %>% mutate(peso=HV005/1000000,
                 alt=(HV040/1000)*3.3) %>% 
@@ -83,6 +83,15 @@ diseño2<-tb_1 %>% as_survey_design(ids=HV001, strata=HV022, weights=peso, nest 
 # Distrital
 diseño2 %>% filter(!is.na(anemia_3años) & HV015==1 & HC55==0 & Departamento=="JUNIN") %>% 
   group_by(Provincia,anemia_3años) %>% 
+  summarize(survey_prop(vartype = c("ci","cv")))
+
+# General
+diseño2 %>% filter(!is.na(anemia_3años) & HV015==1 & HC55==0) %>% 
+  group_by(anemia_3años) %>% 
+  summarize(survey_prop(vartype = c("ci","cv")))
+
+diseño2 %>% filter(!is.na(anemia_5años) & HV015==1 & HC55==0) %>% 
+  group_by(anemia_5años) %>% 
   summarize(survey_prop(vartype = c("ci","cv")))
 #-----------------------------------------------------------------------------------------------------------------------
 # El Mapa.
